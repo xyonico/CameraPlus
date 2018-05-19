@@ -54,7 +54,7 @@ namespace CameraPlus
 		{
 			_fov = Convert.ToSingle(Plugin.Ini.GetValue("fov", "", "90"));
 			_posSmooth = Convert.ToSingle(Plugin.Ini.GetValue("positionSmooth", "", "10"));
-			_rotSmooth = Convert.ToSingle(Plugin.Ini.GetValue("rotationSmooth", "", "10"));
+			_rotSmooth = Convert.ToSingle(Plugin.Ini.GetValue("rotationSmooth", "", "5"));
 			SetFOV();
 		}
 

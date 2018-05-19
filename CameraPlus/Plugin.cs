@@ -34,7 +34,7 @@ namespace CameraPlus
 			{
 				Ini.WriteValue("fov", "90.0");
 				Ini.WriteValue("positionSmooth", "10.0");
-				Ini.WriteValue("rotationSmooth", "10.0");
+				Ini.WriteValue("rotationSmooth", "5.0");
 				Ini.Save();
 			}
 
