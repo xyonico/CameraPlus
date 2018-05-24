@@ -10,20 +10,14 @@ namespace CameraPlus
 {
 	public class Plugin : IPlugin
 	{
-		private CameraPlusBehaviour _cameraPlus;
 		public static readonly Ini Ini = new Ini(Path.Combine(Environment.CurrentDirectory, "cameraplus.cfg"));
+		private CameraPlusBehaviour _cameraPlus;
 		private bool _init;
 		private FileSystemWatcher _iniWatcher;
 
-		public string Name
-		{
-			get { return "Camera+"; }
-		}
+		public string Name => "CameraPlus";
 
-		public string Version
-		{
-			get { return "v1.0"; }
-		}
+		public string Version => "v1.1";
 
 		public void OnApplicationStart()
 		{
@@ -33,20 +27,29 @@ namespace CameraPlus
 			if (!File.Exists(Path.Combine(Environment.CurrentDirectory, "cameraplus.cfg")))
 			{
 				Ini.WriteValue("fov", "90.0");
-				Ini.WriteValue("positionSmooth", "10.0");
-				Ini.WriteValue("rotationSmooth", "5.0");
+				Ini.WriteValue("positionSmooth", "10");
+				Ini.WriteValue("rotationSmooth", "5");
 
-				Ini.WriteValue("posx", "0.0");
-				Ini.WriteValue("posy", "2.0");
-				Ini.WriteValue("posz", "-1.0");
+				Ini.WriteValue("thirdPerson", "false");
+				
+				Ini.WriteValue("posx", "0");
+				Ini.WriteValue("posy", "2");
+				Ini.WriteValue("posz", "-1");
 
-				Ini.WriteValue("rotw", "1.0");
-				Ini.WriteValue("rotx", "0.25");
-				Ini.WriteValue("roty", "0.0");
-				Ini.WriteValue("rotz", "0.0");
+				Ini.WriteValue("rotw", "0.25");
+				Ini.WriteValue("rotx", "0");
+				Ini.WriteValue("roty", "0");
+				Ini.WriteValue("rotz", "1");
 
-				Ini.WriteValue("fixed", "false");
 				Ini.Save();
+			}
+			else
+			{
+				if (Ini.GetValue("thirdPerson", "", "missing") == "missing")
+				{
+					Ini.WriteValue("thirdPerson", "false");
+					Ini.Save();
+				}
 			}
 
 			_iniWatcher = new FileSystemWatcher(Environment.CurrentDirectory)
@@ -62,32 +65,7 @@ namespace CameraPlus
 		{
 			SceneManager.activeSceneChanged -= SceneManagerOnActiveSceneChanged;
 			_iniWatcher.Changed -= IniWatcherOnChanged;
-		}
-
-		private void SceneManagerOnActiveSceneChanged(Scene arg0, Scene scene)
-		{
-			if (scene.buildIndex < 1) return;
-			if (_cameraPlus != null)
-			{
-				Object.Destroy(_cameraPlus.gameObject);
-			}
-
-			var mainCamera = Object.FindObjectsOfType<Camera>().FirstOrDefault(x => x.CompareTag("MainCamera"));
-			if (mainCamera == null)
-			{
-				return;
-			}
-
-			var gameObj = new GameObject("CameraPlus");
-			CameraPlusBehaviour.MainCamera = mainCamera;
-			_cameraPlus = gameObj.AddComponent<CameraPlusBehaviour>();
-		}
-
-		private void IniWatcherOnChanged(object sender, FileSystemEventArgs fileSystemEventArgs)
-		{
-			if (_cameraPlus == null) return;
-			Ini.Load();
-			_cameraPlus.ReadIni();
+			Ini.Save();
 		}
 
 		public void OnLevelWasLoaded(int level)
@@ -104,6 +82,26 @@ namespace CameraPlus
 
 		public void OnFixedUpdate()
 		{
+		}
+
+		private void SceneManagerOnActiveSceneChanged(Scene arg0, Scene scene)
+		{
+			if (scene.buildIndex < 1) return;
+			if (_cameraPlus != null) Object.Destroy(_cameraPlus.gameObject);
+
+			var mainCamera = Object.FindObjectsOfType<Camera>().FirstOrDefault(x => x.CompareTag("MainCamera"));
+			if (mainCamera == null) return;
+
+			var gameObj = new GameObject("CameraPlus");
+			CameraPlusBehaviour.MainCamera = mainCamera;
+			_cameraPlus = gameObj.AddComponent<CameraPlusBehaviour>();
+		}
+
+		private void IniWatcherOnChanged(object sender, FileSystemEventArgs fileSystemEventArgs)
+		{
+			if (_cameraPlus == null) return;
+			Ini.Load();
+			_cameraPlus.ReadIni();
 		}
 	}
 }
