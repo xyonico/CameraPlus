@@ -1,28 +1,38 @@
 # CameraPlus
 Plugin for Beat Saber for a smoother and wider FOV camera.
-[Video Comparison](https://youtu.be/MysLXKSXGTY)
 
-# Installation
-*This plugin requires IPA which you will automatically get if you install [the Song Loader Plugin](https://github.com/xyonico/BeatSaberSongInjector/releases).*
+[Video Comparison](https://youtu.be/MysLXKSXGTY)  
+[Third Person Preview](https://youtu.be/ltIhpt-n6b8)
 
-1. Make sure that Beat Saber is not running.
-2. Extract the `CameraPlus.dll` into the `Beat Saber/Plugins folder`.  
-	For Oculus Home: `.../Oculus Apps/Software/hyperbolic-magnetism-beat-saber`  
-	For Steam: `.../steamapps/common/Beat Saber`
+# Installing
+1. Use the mod installer: https://github.com/Umbranoxio/BeatSaberModInstaller/releases
+		It is the easiest method, it will do all these steps below in 1 click.
+	
+### To install manually:
+	1b. Make sure that Beat Saber is not running.
+	2b. Extract the contents of the zip into Beat Saber's installation folder.
+		For Oculus Home: \Oculus Apps\Software\hyperbolic-magnetism-beat-saber\
+		For Steam: \steamapps\common\Beat Saber\
 		(The folder that contains Beat Saber.exe)
-4. Done! You've installed the CameraPlus Plugin.
-
+	3b. Done! You've installed the Custom Avatar Plugin.
 # Usage
+Press <kbd>F1</kbd> to toggle between first and third person.
+
 After you run the game once, a `cameraplus.cfg` file is created within the Beat Saber folder.
 Edit that file to configure CameraPlus:
 
-`fov=90.0` The horizontal field of view of the camera.  
-`positionSmooth=10.0` How much position should smooth **SMALLER NUMBER = SMOOTHER**  
-`rotationSmooth=5.0` How much rotation should smooth **SMALLER NUMBER = SMOOTHER**
+`fov=90.0` The horizontal field of view of the camera
+`positionSmooth=10.0` How much position should smooth **(SMALLER NUMBER = SMOOTHER)**
+`rotationSmooth=5.0` How much rotation should smooth **(SMALLER NUMBER = SMOOTHER)**
+`thirdPerson=false` Whether third person camera is enabled
 
-The game updates the camera as soon as you save the config file.
-
----
+`posx=0` X position of third person camera
+`posy=0` Y position of third person camera
+`posz=0` Z position of third person camera
+`rotx=0` X rotation of third person camera
+`roty=0` Y rotation of third person camera
+`rotz=0` Z rotation of third person camera
+`rotw=0` W rotation of third person camera
 
 If you need help, ask us at the Beat Saber Mod Group Discord Server:
 https://discord.gg/Cz6PTM5
