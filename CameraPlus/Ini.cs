@@ -8,6 +8,7 @@ public class Ini
 {
     Dictionary<string, Dictionary<string, string>> ini = new Dictionary<string, Dictionary<string, string>>(StringComparer.InvariantCultureIgnoreCase);
     string file;
+    private string _fileText;
 
     /// <summary>
     /// Initialize an INI file
@@ -30,7 +31,8 @@ public class Ini
     public void Load()
     {
         var txt = File.ReadAllText(file);
-
+        _fileText = txt;
+            
         Dictionary<string, string> currentSection = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
 
         ini[""] = currentSection;
@@ -201,5 +203,10 @@ public class Ini
     public string[] GetSections()
     {
         return ini.Keys.Where(t => t != "").ToArray();
+    }
+
+    public string GetFullText()
+    {
+        return _fileText;
     }
 }

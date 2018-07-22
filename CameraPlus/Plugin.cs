@@ -24,13 +24,13 @@ namespace CameraPlus
 			if (_init) return;
 			_init = true;
 			SceneManager.activeSceneChanged += SceneManagerOnActiveSceneChanged;
-			if (!File.Exists(Path.Combine(Environment.CurrentDirectory, "cameraplus.cfg")))
+			if (!File.Exists(Path.Combine(Environment.CurrentDirectory, "cameraplus.cfg")) || Ini.GetFullText().Contains(','))
 			{
 				Ini.WriteValue("fov", "90.0");
 				Ini.WriteValue("positionSmooth", "10");
 				Ini.WriteValue("rotationSmooth", "5");
 
-				Ini.WriteValue("thirdPerson", "false");
+				Ini.WriteValue("thirdPerson", "False");
 				
 				Ini.WriteValue("posx", "0");
 				Ini.WriteValue("posy", "2");
@@ -47,7 +47,7 @@ namespace CameraPlus
 			{
 				if (Ini.GetValue("thirdPerson", "", "missing") == "missing")
 				{
-					Ini.WriteValue("thirdPerson", "false");
+					Ini.WriteValue("thirdPerson", "False");
 					Ini.Save();
 				}
 			}

@@ -111,7 +111,7 @@ namespace CameraPlus
 			PosSmooth = Convert.ToSingle(Plugin.Ini.GetValue("positionSmooth", "", "10"), CultureInfo.InvariantCulture);
 			RotSmooth = Convert.ToSingle(Plugin.Ini.GetValue("rotationSmooth", "", "5"), CultureInfo.InvariantCulture);
 
-			ThirdPerson = Convert.ToBoolean(Plugin.Ini.GetValue("thirdPerson", "", "false"), CultureInfo.InvariantCulture);
+			ThirdPerson = Convert.ToBoolean(Plugin.Ini.GetValue("thirdPerson", "", "False"), CultureInfo.InvariantCulture);
 			ThirdPersonPos = new Vector3(
 				Convert.ToSingle(Plugin.Ini.GetValue("posx", "", "0"), CultureInfo.InvariantCulture),
 				Convert.ToSingle(Plugin.Ini.GetValue("posy", "", "2"), CultureInfo.InvariantCulture),
