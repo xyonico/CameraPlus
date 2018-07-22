@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using UnityEngine;
 using VRUIControls;
 
@@ -12,6 +13,7 @@ namespace CameraPlus
 		private Quaternion _grabRot;
 		private Vector3 _realPos;
 		private Quaternion _realRot;
+		private const float MinDistance = 0.25f;
 
 		public override void Update()
 		{
@@ -42,6 +44,15 @@ namespace CameraPlus
 			if (_grabbedCamera == null) return;
 			if (_grabbingController != null)
 			{
+				var diff = _grabbingController.verticalAxisValue * Time.deltaTime;
+				if (_grabPos.magnitude > MinDistance)
+				{
+					_grabPos -= Vector3.forward * diff;
+				}
+				else
+				{	
+					_grabPos -= Vector3.forward * Mathf.Clamp(diff, float.MinValue, 0);
+				}
 				_realPos = _grabbingController.transform.TransformPoint(_grabPos);
 				_realRot = _grabbingController.transform.rotation * _grabRot;
 			}
@@ -60,13 +71,13 @@ namespace CameraPlus
 			var ini = Plugin.Ini;
 			var pos = _grabbedCamera.position;
 			var rot = _grabbedCamera.rotation;
-			ini.WriteValue("posx", pos.x.ToString());
-			ini.WriteValue("posy", pos.y.ToString());
-			ini.WriteValue("posz", pos.z.ToString());
-			ini.WriteValue("rotx", rot.x.ToString());
-			ini.WriteValue("roty", rot.y.ToString());
-			ini.WriteValue("rotz", rot.z.ToString());
-			ini.WriteValue("rotw", rot.w.ToString());
+			ini.WriteValue("posx", pos.x.ToString(CultureInfo.InvariantCulture));
+			ini.WriteValue("posy", pos.y.ToString(CultureInfo.InvariantCulture));
+			ini.WriteValue("posz", pos.z.ToString(CultureInfo.InvariantCulture));
+			ini.WriteValue("rotx", rot.x.ToString(CultureInfo.InvariantCulture));
+			ini.WriteValue("roty", rot.y.ToString(CultureInfo.InvariantCulture));
+			ini.WriteValue("rotz", rot.z.ToString(CultureInfo.InvariantCulture));
+			ini.WriteValue("rotw", rot.w.ToString(CultureInfo.InvariantCulture));
 		}
 	}
 }

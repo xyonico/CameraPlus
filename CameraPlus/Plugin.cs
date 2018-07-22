@@ -17,7 +17,7 @@ namespace CameraPlus
 
 		public string Name => "CameraPlus";
 
-		public string Version => "v1.1";
+		public string Version => "v1.2";
 
 		public void OnApplicationStart()
 		{
@@ -34,12 +34,12 @@ namespace CameraPlus
 				
 				Ini.WriteValue("posx", "0");
 				Ini.WriteValue("posy", "2");
-				Ini.WriteValue("posz", "-1");
+				Ini.WriteValue("posz", "-1.2");
 
-				Ini.WriteValue("rotw", "0.25");
-				Ini.WriteValue("rotx", "0");
+				Ini.WriteValue("rotx", "-0.2");
 				Ini.WriteValue("roty", "0");
-				Ini.WriteValue("rotz", "1");
+				Ini.WriteValue("rotz", "0");
+				Ini.WriteValue("rotw", "-1");
 
 				Ini.Save();
 			}

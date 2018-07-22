@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -13,14 +14,25 @@ namespace CameraPlus
 		public static float PosSmooth;
 		public static float RotSmooth;
 
-		public static bool ThirdPerson;
+		public static bool ThirdPerson
+		{
+			get { return _thirdPerson; }
+			set
+			{
+				_thirdPerson = value;
+				_cameraCube.gameObject.SetActive(_thirdPerson);
+			}
+		}
+
+		private static bool _thirdPerson;
+		
 		public static Vector3 ThirdPersonPos;
 		public static Quaternion ThirdPersonRot;
 		private static RenderTexture _renderTexture;
 		private static Material _previewMaterial;
-		private Camera _cam;
-		private Camera _previewCam;
-		private Transform _cameraCube;
+		private static Camera _cam;
+		private static Camera _previewCam;
+		private static Transform _cameraCube;
 		private const int Width = 256;
 
 		private void Awake()
@@ -95,23 +107,22 @@ namespace CameraPlus
 
 		public void ReadIni()
 		{
-			FOV = Convert.ToSingle(Plugin.Ini.GetValue("fov", "", "90"));
-			PosSmooth = Convert.ToSingle(Plugin.Ini.GetValue("positionSmooth", "", "10"));
-			RotSmooth = Convert.ToSingle(Plugin.Ini.GetValue("rotationSmooth", "", "5"));
+			FOV = Convert.ToSingle(Plugin.Ini.GetValue("fov", "", "90"), CultureInfo.InvariantCulture);
+			PosSmooth = Convert.ToSingle(Plugin.Ini.GetValue("positionSmooth", "", "10"), CultureInfo.InvariantCulture);
+			RotSmooth = Convert.ToSingle(Plugin.Ini.GetValue("rotationSmooth", "", "5"), CultureInfo.InvariantCulture);
 
-			ThirdPerson = Convert.ToBoolean(Plugin.Ini.GetValue("thirdPerson", "", "false"));
-			_cameraCube.gameObject.SetActive(ThirdPerson);
+			ThirdPerson = Convert.ToBoolean(Plugin.Ini.GetValue("thirdPerson", "", "false"), CultureInfo.InvariantCulture);
 			ThirdPersonPos = new Vector3(
-				Convert.ToSingle(Plugin.Ini.GetValue("posx", "", "0")),
-				Convert.ToSingle(Plugin.Ini.GetValue("posy", "", "2")),
-				Convert.ToSingle(Plugin.Ini.GetValue("posz", "", "-1"))
+				Convert.ToSingle(Plugin.Ini.GetValue("posx", "", "0"), CultureInfo.InvariantCulture),
+				Convert.ToSingle(Plugin.Ini.GetValue("posy", "", "2"), CultureInfo.InvariantCulture),
+				Convert.ToSingle(Plugin.Ini.GetValue("posz", "", "-1.2"), CultureInfo.InvariantCulture)
 			);
 			
 			ThirdPersonRot = new Quaternion(
-				Convert.ToSingle(Plugin.Ini.GetValue("rotx", "", "0.25")),
-				Convert.ToSingle(Plugin.Ini.GetValue("roty", "", "0")),
-				Convert.ToSingle(Plugin.Ini.GetValue("rotz", "", "0")),
-				Convert.ToSingle(Plugin.Ini.GetValue("rotw", "", "1"))
+				Convert.ToSingle(Plugin.Ini.GetValue("rotx", "", "-0.2"), CultureInfo.InvariantCulture),
+				Convert.ToSingle(Plugin.Ini.GetValue("roty", "", "0"), CultureInfo.InvariantCulture),
+				Convert.ToSingle(Plugin.Ini.GetValue("rotz", "", "0"), CultureInfo.InvariantCulture),
+				Convert.ToSingle(Plugin.Ini.GetValue("rotw", "", "-1"), CultureInfo.InvariantCulture)
 			);
 
 			SetFOV();
@@ -143,6 +154,21 @@ namespace CameraPlus
 			_cam.fieldOfView = fov;
 			if (_previewCam == null) return;
 			_previewCam.fieldOfView = fov;
+		}
+
+		private void Update()
+		{
+			if (Input.GetKeyDown(KeyCode.F1))
+			{
+				ThirdPerson = !ThirdPerson;
+				if (!ThirdPerson)
+				{
+					transform.position = MainCamera.transform.position;
+					transform.rotation = MainCamera.transform.rotation;
+				}
+
+				Plugin.Ini.WriteValue("thirdPerson", ThirdPerson.ToString(CultureInfo.InvariantCulture));
+			}
 		}
 	}
 }
