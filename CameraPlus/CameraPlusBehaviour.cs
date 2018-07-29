@@ -45,8 +45,9 @@ namespace CameraPlus
 		{
 			XRSettings.showDeviceView = false;
 			
+			Plugin.ConfigChangedEvent += PluginOnConfigChangedEvent;
 			SceneManager.activeSceneChanged += SceneManagerOnActiveSceneChanged;
-			SceneManagerOnActiveSceneChanged(new Scene(), new Scene());
+			
 			var gameObj = Instantiate(MainCamera.gameObject);
 			gameObj.SetActive(false);
 			gameObj.name = "Camera Plus";
@@ -106,14 +107,37 @@ namespace CameraPlus
 
 			ReadConfig();
 
+			if (ThirdPerson)
+			{
+				ThirdPersonPos = Plugin.Config.Position;
+				ThirdPersonRot = Plugin.Config.Rotation;
+				
+				transform.position = ThirdPersonPos;
+				transform.eulerAngles = ThirdPersonRot;
+				
+				_cameraCube.position = ThirdPersonPos;
+				_cameraCube.eulerAngles = ThirdPersonRot;
+			}
+			
+			SceneManagerOnActiveSceneChanged(new Scene(), new Scene());
+
 			StartCoroutine(RenderCameraRoutine());
 		}
 
-		public void ReadConfig()
+		private void OnDestroy()
+		{
+			Plugin.ConfigChangedEvent -= PluginOnConfigChangedEvent;
+			SceneManager.activeSceneChanged -= SceneManagerOnActiveSceneChanged;
+		}
+
+		private void PluginOnConfigChangedEvent()
+		{
+			ReadConfig();
+		}
+
+		private void ReadConfig()
 		{
 			ThirdPerson = Plugin.Config.thirdPerson;
-			ThirdPersonPos = new Vector3(Plugin.Config.posx, Plugin.Config.posy, Plugin.Config.posz);
-			ThirdPersonRot = new Vector3(Plugin.Config.angx, Plugin.Config.angy, Plugin.Config.angz);
 
 			_cameraPreviewQuad.gameObject.SetActive(Plugin.Config.thirdPersonPreview);
 
@@ -153,8 +177,9 @@ namespace CameraPlus
 		{
 			var pointer = Resources.FindObjectsOfTypeAll<VRPointer>().FirstOrDefault();
 			if (pointer == null) return;
-			ReflectionUtil.CopyComponent(pointer, typeof(CameraMoverPointer), pointer.gameObject);
+			var movePointer = (CameraMoverPointer) ReflectionUtil.CopyComponent(pointer, typeof(CameraMoverPointer), pointer.gameObject);
 			DestroyImmediate(pointer);
+			movePointer.Init(_cameraCube);
 		}
 
 		private void LateUpdate()

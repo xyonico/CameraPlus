@@ -7,13 +7,38 @@ namespace CameraPlus
 {
 	public class CameraMoverPointer : VRPointer
 	{
-		private Transform _grabbedCamera;
+		private Transform _cameraCube;
 		private VRController _grabbingController;
 		private Vector3 _grabPos;
 		private Quaternion _grabRot;
 		private Vector3 _realPos;
 		private Quaternion _realRot;
 		private const float MinDistance = 0.25f;
+
+		public void Init(Transform cameraCube)
+		{
+			_cameraCube = cameraCube;
+			_realPos = _cameraCube.position;
+			_realRot = _cameraCube.rotation;
+		}
+
+		public override void OnEnable()
+		{
+			base.OnEnable();
+			Plugin.ConfigChangedEvent += PluginOnConfigChangedEvent;
+		}
+
+		public override void OnDisable()
+		{
+			base.OnDisable();
+			Plugin.ConfigChangedEvent -= PluginOnConfigChangedEvent;
+		}
+
+		private void PluginOnConfigChangedEvent()
+		{
+			_realPos = Plugin.Config.Position;
+			_realRot = Quaternion.Euler(Plugin.Config.Rotation);
+		}
 
 		public override void Update()
 		{
@@ -24,11 +49,10 @@ namespace CameraPlus
 					if (_grabbingController != null) return;
 					if (Physics.Raycast(vrController.position, vrController.forward, out var hit, _defaultLaserPointerLength))
 					{
-						if (hit.transform.name != "CameraCube") return;
-						_grabbedCamera = hit.transform;
+						if (hit.transform != _cameraCube) return;
 						_grabbingController = vrController;
-						_grabPos = vrController.transform.InverseTransformPoint(_grabbedCamera.position);
-						_grabRot = Quaternion.Inverse(vrController.transform.rotation) * _grabbedCamera.rotation;
+						_grabPos = vrController.transform.InverseTransformPoint(_cameraCube.position);
+						_grabRot = Quaternion.Inverse(vrController.transform.rotation) * _cameraCube.rotation;
 					}
 				}
 
@@ -40,7 +64,6 @@ namespace CameraPlus
 
 		private void LateUpdate()
 		{
-			if (_grabbedCamera == null) return;
 			if (_grabbingController != null)
 			{
 				var diff = _grabbingController.verticalAxisValue * Time.deltaTime;
@@ -56,20 +79,17 @@ namespace CameraPlus
 				_realRot = _grabbingController.transform.rotation * _grabRot;
 			}
 
-			_grabbedCamera.position = Vector3.Lerp(_grabbedCamera.position, _realPos,
+			CameraPlusBehaviour.ThirdPersonPos = Vector3.Lerp(_cameraCube.position, _realPos,
 				Plugin.Config.positionSmooth * Time.deltaTime);
 
-			_grabbedCamera.rotation = Quaternion.Slerp(_grabbedCamera.rotation, _realRot,
-				Plugin.Config.rotationSmooth * Time.deltaTime);
-
-			CameraPlusBehaviour.ThirdPersonPos = _grabbedCamera.position;
-			CameraPlusBehaviour.ThirdPersonRot = _grabbedCamera.eulerAngles;
+			CameraPlusBehaviour.ThirdPersonRot = Quaternion.Slerp(_cameraCube.rotation, _realRot,
+				Plugin.Config.rotationSmooth * Time.deltaTime).eulerAngles;
 		}
 
 		private void SaveToConfig()
 		{
-			var pos = _grabbedCamera.position;
-			var rot = _grabbedCamera.eulerAngles;
+			var pos = _realPos;
+			var rot = _realRot.eulerAngles;
 			
 			Plugin.Config.posx = pos.x;
 			Plugin.Config.posy = pos.y;

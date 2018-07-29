@@ -24,6 +24,19 @@ namespace CameraPlus
 		public float angy;
 		public float angz;
 
+		public Vector3 Position
+		{
+			get
+			{
+				return new Vector3(posx, posy, posz);
+			}
+		}
+
+		public Vector3 Rotation
+		{
+			get { return new Vector3(angx, angy, angz); }
+		}
+
 		public Config(string filePath)
 		{
 			FilePath = filePath;

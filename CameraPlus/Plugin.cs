@@ -16,6 +16,8 @@ namespace CameraPlus
 		private FileSystemWatcher _configWatcher;
 		public static readonly Config Config = new Config(Path.Combine(Environment.CurrentDirectory, "cameraplus.cfg"));
 
+		public static event Action ConfigChangedEvent;
+
 		public string Name => "CameraPlus";
 
 		public string Version => "v1.3";
@@ -74,9 +76,12 @@ namespace CameraPlus
 
 		private void ConfigWatcherOnChanged(object sender, FileSystemEventArgs fileSystemEventArgs)
 		{
-			if (_cameraPlus == null) return;
 			Config.Load();
-			_cameraPlus.ReadConfig();
+			
+			if (ConfigChangedEvent != null)
+			{
+				ConfigChangedEvent();
+			}
 		}
 	}
 }
