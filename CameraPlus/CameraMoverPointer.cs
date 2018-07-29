@@ -22,8 +22,7 @@ namespace CameraPlus
 				if (vrController.triggerValue > 0.9f)
 				{
 					if (_grabbingController != null) return;
-					RaycastHit hit;
-					if (Physics.Raycast(vrController.position, vrController.forward, out hit, _defaultLaserPointerLength))
+					if (Physics.Raycast(vrController.position, vrController.forward, out var hit, _defaultLaserPointerLength))
 					{
 						if (hit.transform.name != "CameraCube") return;
 						_grabbedCamera = hit.transform;
@@ -35,7 +34,7 @@ namespace CameraPlus
 
 			if (_grabbingController == null || !(_grabbingController.triggerValue <= 0.9f)) return;
 			if (_grabbingController == null) return;
-			SaveToIni();
+			SaveToConfig();
 			_grabbingController = null;
 		}
 
@@ -58,26 +57,29 @@ namespace CameraPlus
 			}
 
 			_grabbedCamera.position = Vector3.Lerp(_grabbedCamera.position, _realPos,
-				CameraPlusBehaviour.PosSmooth * Time.deltaTime);
+				Plugin.Config.positionSmooth * Time.deltaTime);
+
 			_grabbedCamera.rotation = Quaternion.Slerp(_grabbedCamera.rotation, _realRot,
-				CameraPlusBehaviour.RotSmooth * Time.deltaTime);
+				Plugin.Config.rotationSmooth * Time.deltaTime);
 
 			CameraPlusBehaviour.ThirdPersonPos = _grabbedCamera.position;
-			CameraPlusBehaviour.ThirdPersonRot = _grabbedCamera.rotation;
+			CameraPlusBehaviour.ThirdPersonRot = _grabbedCamera.eulerAngles;
 		}
 
-		private void SaveToIni()
+		private void SaveToConfig()
 		{
-			var ini = Plugin.Ini;
 			var pos = _grabbedCamera.position;
-			var rot = _grabbedCamera.rotation;
-			ini.WriteValue("posx", pos.x.ToString(CultureInfo.InvariantCulture));
-			ini.WriteValue("posy", pos.y.ToString(CultureInfo.InvariantCulture));
-			ini.WriteValue("posz", pos.z.ToString(CultureInfo.InvariantCulture));
-			ini.WriteValue("rotx", rot.x.ToString(CultureInfo.InvariantCulture));
-			ini.WriteValue("roty", rot.y.ToString(CultureInfo.InvariantCulture));
-			ini.WriteValue("rotz", rot.z.ToString(CultureInfo.InvariantCulture));
-			ini.WriteValue("rotw", rot.w.ToString(CultureInfo.InvariantCulture));
+			var rot = _grabbedCamera.eulerAngles;
+			
+			Plugin.Config.posx = pos.x;
+			Plugin.Config.posy = pos.y;
+			Plugin.Config.posz = pos.z;
+			
+			Plugin.Config.angx = rot.x;
+			Plugin.Config.angy = rot.y;
+			Plugin.Config.angz = rot.z;
+			
+			Plugin.Config.Save();
 		}
 	}
 }

@@ -33,7 +33,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>D:\SteamLibrary\steamapps\common\Beat Saber\Beat Saber_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Beat Saber\Beat Saber_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp-firstpass, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
       <HintPath>D:\SteamLibrary\steamapps\common\Beat Saber\Beat Saber_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
@@ -69,7 +69,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CameraMoverPointer.cs" />
-    <Compile Include="Ini.cs" />
+    <Compile Include="Config.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="CameraPlusBehaviour.cs" />
@@ -80,8 +80,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-    <Target Name="AfterBuild">
-        <Copy SourceFiles="$(OutputPath)CameraPlus.dll" DestinationFolder="C:\Program Files (x86)\Steam\steamapps\common\Beat Saber\Plugins\" ContinueOnError="true" />
-    </Target>
-
+  <Target Name="AfterBuild">
+    <Copy SourceFiles="$(OutputPath)CameraPlus.dll" DestinationFolder="C:\Program Files (x86)\Steam\steamapps\common\Beat Saber\Plugins\" ContinueOnError="true" />
+  </Target>
 </Project>
