@@ -10,38 +10,28 @@ namespace CameraPlus
 {
 	public class Plugin : IPlugin
 	{
-		//public static readonly Ini Ini = new Ini(Path.Combine(Environment.CurrentDirectory, "cameraplus.cfg"));
+		public readonly Config Config = new Config(Path.Combine(Environment.CurrentDirectory, "cameraplus.cfg"));
+		
 		private CameraPlusBehaviour _cameraPlus;
 		private bool _init;
-		private FileSystemWatcher _configWatcher;
-		public static readonly Config Config = new Config(Path.Combine(Environment.CurrentDirectory, "cameraplus.cfg"));
-
-		public static event Action ConfigChangedEvent;
-
+		
+		public static Plugin Instance { get; private set; }
 		public string Name => "CameraPlus";
-
-		public string Version => "v1.3";
+		public string Version => "v2.0";
 
 		public void OnApplicationStart()
 		{
 			if (_init) return;
 			_init = true;
-			SceneManager.activeSceneChanged += SceneManagerOnActiveSceneChanged;
-			
 
-			_configWatcher = new FileSystemWatcher(Environment.CurrentDirectory)
-			{
-				NotifyFilter = NotifyFilters.LastWrite,
-				Filter = "cameraplus.cfg",
-				EnableRaisingEvents = true
-			};
-			_configWatcher.Changed += ConfigWatcherOnChanged;
+			Instance = this;
+			
+			SceneManager.activeSceneChanged += SceneManagerOnActiveSceneChanged;
 		}
 
 		public void OnApplicationQuit()
 		{
 			SceneManager.activeSceneChanged -= SceneManagerOnActiveSceneChanged;
-			_configWatcher.Changed -= ConfigWatcherOnChanged;
 			Config.Save();
 		}
 
@@ -70,18 +60,8 @@ namespace CameraPlus
 			if (mainCamera == null) return;
 
 			var gameObj = new GameObject("CameraPlus");
-			CameraPlusBehaviour.MainCamera = mainCamera;
 			_cameraPlus = gameObj.AddComponent<CameraPlusBehaviour>();
-		}
-
-		private void ConfigWatcherOnChanged(object sender, FileSystemEventArgs fileSystemEventArgs)
-		{
-			Config.Load();
-			
-			if (ConfigChangedEvent != null)
-			{
-				ConfigChangedEvent();
-			}
+			_cameraPlus.Init(mainCamera);
 		}
 	}
 }

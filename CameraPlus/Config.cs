@@ -7,14 +7,14 @@ namespace CameraPlus
 	public class Config
 	{
 		public string FilePath { get; }
-		
 		public float fov = 90;
 		public float fps = 60;
+		public int antiAliasing = 2;
+		public float renderScale = 1;
 		public float positionSmooth = 10;
 		public float rotationSmooth = 5;
 		
 		public bool thirdPerson = false;
-		public bool thirdPersonPreview = true;
 		
 		public float posx;
 		public float posy = 2;
@@ -24,6 +24,11 @@ namespace CameraPlus
 		public float angy;
 		public float angz;
 
+		public event Action<Config> ConfigChangedEvent;
+		
+		private readonly FileSystemWatcher _configWatcher;
+		private bool _saving;
+		
 		public Vector3 Position
 		{
 			get
@@ -45,33 +50,66 @@ namespace CameraPlus
 			{
 				Load();
 				var text = File.ReadAllText(FilePath);
-				if (!text.Contains("rotx")) return;
-				
-				var oldRotConfig = new OldRotConfig();
-				ConfigSerializer.LoadConfig(oldRotConfig, FilePath);
-		
-				var euler = new Quaternion(oldRotConfig.rotx, oldRotConfig.roty, oldRotConfig.rotz, oldRotConfig.rotw)
-					.eulerAngles;
-				angx = euler.x;
-				angy = euler.y;
-				angz = euler.z;
-				
-				Save();
+				if (text.Contains("rotx"))
+				{
+
+					var oldRotConfig = new OldRotConfig();
+					ConfigSerializer.LoadConfig(oldRotConfig, FilePath);
+
+					var euler = new Quaternion(oldRotConfig.rotx, oldRotConfig.roty, oldRotConfig.rotz,
+							oldRotConfig.rotw)
+						.eulerAngles;
+					angx = euler.x;
+					angy = euler.y;
+					angz = euler.z;
+
+					Save();
+				}
 			}
 			else
 			{
 				Save();
 			}
+			
+			_configWatcher = new FileSystemWatcher(Environment.CurrentDirectory)
+			{
+				NotifyFilter = NotifyFilters.LastWrite,
+				Filter = "cameraplus.cfg",
+				EnableRaisingEvents = true
+			};
+			_configWatcher.Changed += ConfigWatcherOnChanged;
+		}
+
+		~Config()
+		{
+			_configWatcher.Changed -= ConfigWatcherOnChanged;
 		}
 
 		public void Save()
 		{
+			_saving = true;
 			ConfigSerializer.SaveConfig(this, FilePath);
 		}
 
 		public void Load()
 		{
 			ConfigSerializer.LoadConfig(this, FilePath);
+		}
+		
+		private void ConfigWatcherOnChanged(object sender, FileSystemEventArgs fileSystemEventArgs)
+		{
+			if (_saving)
+			{
+				_saving = false;
+				return;
+			}
+			
+			Load();
+			
+			if (ConfigChangedEvent != null)
+			{
+				ConfigChangedEvent(this);
+			}
 		}
 		
 		public class OldRotConfig

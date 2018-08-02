@@ -1,43 +1,43 @@
-﻿using System;
-using System.Globalization;
-using UnityEngine;
+﻿using UnityEngine;
 using VRUIControls;
 
 namespace CameraPlus
 {
 	public class CameraMoverPointer : VRPointer
 	{
-		private Transform _cameraCube;
-		private VRController _grabbingController;
-		private Vector3 _grabPos;
-		private Quaternion _grabRot;
-		private Vector3 _realPos;
-		private Quaternion _realRot;
-		private const float MinDistance = 0.25f;
+		protected CameraPlusBehaviour _cameraPlus;
+		protected Transform _cameraCube;
+		protected VRController _grabbingController;
+		protected Vector3 _grabPos;
+		protected Quaternion _grabRot;
+		protected Vector3 _realPos;
+		protected Quaternion _realRot;
+		protected const float MinDistance = 0.25f;
 
-		public void Init(Transform cameraCube)
+		public virtual void Init(CameraPlusBehaviour cameraPlus,Transform cameraCube)
 		{
+			_cameraPlus = cameraPlus;
 			_cameraCube = cameraCube;
-			_realPos = _cameraCube.position;
-			_realRot = _cameraCube.rotation;
+			_realPos = Plugin.Instance.Config.Position;
+			_realRot = Quaternion.Euler(Plugin.Instance.Config.Rotation);
 		}
 
 		public override void OnEnable()
 		{
 			base.OnEnable();
-			Plugin.ConfigChangedEvent += PluginOnConfigChangedEvent;
+			Plugin.Instance.Config.ConfigChangedEvent += PluginOnConfigChangedEvent;
 		}
 
 		public override void OnDisable()
 		{
 			base.OnDisable();
-			Plugin.ConfigChangedEvent -= PluginOnConfigChangedEvent;
+			Plugin.Instance.Config.ConfigChangedEvent -= PluginOnConfigChangedEvent;
 		}
 
-		private void PluginOnConfigChangedEvent()
+		protected virtual void PluginOnConfigChangedEvent(Config config)
 		{
-			_realPos = Plugin.Config.Position;
-			_realRot = Quaternion.Euler(Plugin.Config.Rotation);
+			_realPos = config.Position;
+			_realRot = Quaternion.Euler(config.Rotation);
 		}
 
 		public override void Update()
@@ -62,7 +62,7 @@ namespace CameraPlus
 			_grabbingController = null;
 		}
 
-		private void LateUpdate()
+		protected virtual void LateUpdate()
 		{
 			if (_grabbingController != null)
 			{
@@ -79,27 +79,29 @@ namespace CameraPlus
 				_realRot = _grabbingController.transform.rotation * _grabRot;
 			}
 
-			CameraPlusBehaviour.ThirdPersonPos = Vector3.Lerp(_cameraCube.position, _realPos,
-				Plugin.Config.positionSmooth * Time.deltaTime);
+			_cameraPlus.ThirdPersonPos = Vector3.Lerp(_cameraCube.position, _realPos,
+				Plugin.Instance.Config.positionSmooth * Time.deltaTime);
 
-			CameraPlusBehaviour.ThirdPersonRot = Quaternion.Slerp(_cameraCube.rotation, _realRot,
-				Plugin.Config.rotationSmooth * Time.deltaTime).eulerAngles;
+			_cameraPlus.ThirdPersonRot = Quaternion.Slerp(_cameraCube.rotation, _realRot,
+				Plugin.Instance.Config.rotationSmooth * Time.deltaTime).eulerAngles;
 		}
 
-		private void SaveToConfig()
+		protected virtual void SaveToConfig()
 		{
 			var pos = _realPos;
 			var rot = _realRot.eulerAngles;
+
+			var config = Plugin.Instance.Config;
 			
-			Plugin.Config.posx = pos.x;
-			Plugin.Config.posy = pos.y;
-			Plugin.Config.posz = pos.z;
+			config.posx = pos.x;
+			config.posy = pos.y;
+			config.posz = pos.z;
 			
-			Plugin.Config.angx = rot.x;
-			Plugin.Config.angy = rot.y;
-			Plugin.Config.angz = rot.z;
+			config.angx = rot.x;
+			config.angy = rot.y;
+			config.angz = rot.z;
 			
-			Plugin.Config.Save();
+			config.Save();
 		}
 	}
 }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -10,45 +9,62 @@ namespace CameraPlus
 {
 	public class CameraPlusBehaviour : MonoBehaviour
 	{
-		public static Camera MainCamera;
+		protected const int OnlyInThirdPerson = 3;
+		protected const int OnlyInFirstPerson = 4;
 
-		public static bool ThirdPerson
+		protected Camera _mainCamera;
+
+		public bool ThirdPerson
 		{
 			get { return _thirdPerson; }
 			set
 			{
 				_thirdPerson = value;
 				_cameraCube.gameObject.SetActive(_thirdPerson);
+				_cameraPreviewQuad.gameObject.SetActive(_thirdPerson);
+				
+				if (value)
+				{
+					_cam.cullingMask &= ~(1 << OnlyInFirstPerson);
+					_cam.cullingMask |= 1 << OnlyInThirdPerson;
+				}
+				else
+				{
+					_cam.cullingMask &= ~(1 << OnlyInThirdPerson);
+					_cam.cullingMask |= 1 << OnlyInFirstPerson;
+				}
 			}
 		}
 
-		private static bool _thirdPerson;
+		protected bool _thirdPerson;
 		
-		public static Vector3 ThirdPersonPos;
-		public static Vector3 ThirdPersonRot;
-		private static Texture2D _screenTexture;
-		private static Material _previewMaterial;
-		private static Camera _cam;
-		private static Transform _cameraCube;
-		private static bool _stopRenderLoop;
-		private static GameObject _cameraPreviewQuad;
+		public Vector3 ThirdPersonPos;
+		public Vector3 ThirdPersonRot;
+		protected RenderTexture _camRenderTexture;
+		protected Material _previewMaterial;
+		protected Camera _cam;
+		protected Transform _cameraCube;
+		protected float _lastRenderTime;
+		protected ScreenCameraBehaviour _screenCamera;
+		protected GameObject _cameraPreviewQuad;
+		
+		protected int _prevScreenWidth;
+		protected int _prevScreenHeight;
+		protected int _prevAA;
+		protected float _prevRenderScale;
 
-		private static bool ShouldRenderPreview
+		public virtual void Init(Camera mainCamera)
 		{
-			get
-			{
-				return Plugin.Config.thirdPersonPreview && IsVisibleToCamera(_cameraPreviewQuad.transform, MainCamera);
-			}
-		}
-
-		private void Awake()
-		{
+			_mainCamera = mainCamera;
+			
+			Camera.onPreCull += OnCameraPreCull;
+			
 			XRSettings.showDeviceView = false;
 			
-			Plugin.ConfigChangedEvent += PluginOnConfigChangedEvent;
+			Plugin.Instance.Config.ConfigChangedEvent += PluginOnConfigChangedEvent;
 			SceneManager.activeSceneChanged += SceneManagerOnActiveSceneChanged;
 			
-			var gameObj = Instantiate(MainCamera.gameObject);
+			var gameObj = Instantiate(_mainCamera.gameObject);
 			gameObj.SetActive(false);
 			gameObj.name = "Camera Plus";
 			gameObj.tag = "Untagged";
@@ -56,21 +72,27 @@ namespace CameraPlus
 			DestroyImmediate(gameObj.GetComponent("CameraRenderCallbacksManager"));
 			DestroyImmediate(gameObj.GetComponent("AudioListener"));
 			DestroyImmediate(gameObj.GetComponent("MeshCollider"));
+
 			if (SteamVRCompatibility.IsAvailable)
 			{
 				DestroyImmediate(gameObj.GetComponent(SteamVRCompatibility.SteamVRCamera));
 				DestroyImmediate(gameObj.GetComponent(SteamVRCompatibility.SteamVRFade));
 			}
-
+			
+			_screenCamera = new GameObject("Screen Camera").AddComponent<ScreenCameraBehaviour>();
+			
+			if (_previewMaterial == null)
+			{
+				_previewMaterial = new Material(Shader.Find("Hidden/BlitCopyWithDepth"));
+			}
+			
 			_cam = gameObj.GetComponent<Camera>();
 			_cam.stereoTargetEye = StereoTargetEyeMask.None;
-			_cam.targetTexture = null;
-			_cam.depth += 100;
 			_cam.enabled = false;
 
 			gameObj.SetActive(true);
 
-			var camera = MainCamera.transform;
+			var camera = _mainCamera.transform;
 			transform.position = camera.position;
 			transform.rotation = camera.rotation;
 
@@ -84,17 +106,6 @@ namespace CameraPlus
 			_cameraCube = cameraCube.transform;
 			_cameraCube.localScale = new Vector3(0.15f, 0.15f, 0.22f);
 			_cameraCube.name = "CameraCube";
-			
-			if (_previewMaterial == null)
-			{
-				_previewMaterial = new Material(Shader.Find("Hidden/BlitCopyWithDepth"));
-			}
-			
-			if (_screenTexture == null)
-			{
-				_screenTexture = new Texture2D(Screen.width, Screen.height, TextureFormat.RGBA32, false);
-				_previewMaterial.SetTexture("_MainTex", _screenTexture);
-			}
 
 			var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
 			DestroyImmediate(quad.GetComponent<Collider>());
@@ -109,8 +120,8 @@ namespace CameraPlus
 
 			if (ThirdPerson)
 			{
-				ThirdPersonPos = Plugin.Config.Position;
-				ThirdPersonRot = Plugin.Config.Rotation;
+				ThirdPersonPos = Plugin.Instance.Config.Position;
+				ThirdPersonRot = Plugin.Instance.Config.Rotation;
 				
 				transform.position = ThirdPersonPos;
 				transform.eulerAngles = ThirdPersonRot;
@@ -120,71 +131,125 @@ namespace CameraPlus
 			}
 			
 			SceneManagerOnActiveSceneChanged(new Scene(), new Scene());
-
-			StartCoroutine(RenderCameraRoutine());
 		}
 
-		private void OnDestroy()
+		protected virtual void OnCameraPreCull(Camera cam)
 		{
-			Plugin.ConfigChangedEvent -= PluginOnConfigChangedEvent;
-			SceneManager.activeSceneChanged -= SceneManagerOnActiveSceneChanged;
+			if (cam != _mainCamera) return;
+			var currentTime = Time.realtimeSinceStartup;
+			if (_lastRenderTime + (1 / Plugin.Instance.Config.fps) > currentTime) return;
+			
+			if (Screen.width != _prevScreenWidth || Screen.height != _prevScreenHeight)
+			{
+				CreateScreenRenderTexture();
+			}
+				
+			if (_cam.targetTexture != null)
+			{
+				_cam.Render();
+			}
+
+			_lastRenderTime = currentTime;
 		}
 
-		private void PluginOnConfigChangedEvent()
+		protected virtual void OnDestroy()
+		{
+			Plugin.Instance.Config.ConfigChangedEvent -= PluginOnConfigChangedEvent;
+			SceneManager.activeSceneChanged -= SceneManagerOnActiveSceneChanged;
+			Camera.onPreCull -= OnCameraPreCull;
+		}
+
+		protected virtual void PluginOnConfigChangedEvent(Config config)
 		{
 			ReadConfig();
 		}
 
-		private void ReadConfig()
+		protected virtual void ReadConfig()
 		{
-			ThirdPerson = Plugin.Config.thirdPerson;
-
-			_cameraPreviewQuad.gameObject.SetActive(Plugin.Config.thirdPersonPreview);
-
+			ThirdPerson = Plugin.Instance.Config.thirdPerson;
+			
+			if (!ThirdPerson)
+			{
+				transform.position = _mainCamera.transform.position;
+				transform.rotation = _mainCamera.transform.rotation;
+			}
+			else
+			{
+				ThirdPersonPos = Plugin.Instance.Config.Position;
+				ThirdPersonRot = Plugin.Instance.Config.Rotation;
+			}
+			
+			CreateScreenRenderTexture();
 			SetFOV();
 		}
 
-		private IEnumerator RenderCameraRoutine()
+		protected virtual void CreateScreenRenderTexture()
 		{
-			var waitForFrame = new WaitForEndOfFrame();
-			var nextRender = 0f;
-			while (!_stopRenderLoop)
+			_prevScreenWidth = Screen.width;
+			_prevScreenHeight = Screen.height;
+			
+			HMMainThreadDispatcher.instance.Enqueue(delegate
 			{
-
-				while (Time.realtimeSinceStartup < nextRender)
+				var replace = false;
+				if (_camRenderTexture == null)
 				{
-					yield return waitForFrame;
+					_camRenderTexture = new RenderTexture(1, 1, 24);
+					replace = true;
+				}
+				else
+				{
+					if (Plugin.Instance.Config.antiAliasing != _prevAA || Plugin.Instance.Config.renderScale != _prevRenderScale)
+					{
+						replace = true;
+						
+						_cam.targetTexture = null;
+						_screenCamera.SetRenderTexture(null);
+					
+						_camRenderTexture.Release();
+						
+						_prevAA = Plugin.Instance.Config.antiAliasing;
+						_prevRenderScale = Plugin.Instance.Config.renderScale;
+					}
+				}
+
+				if (!replace)
+				{
+					Console.WriteLine("Don't need to replace");
+					return;
 				}
 				
-				if (_screenTexture.width != Screen.width || _screenTexture.height != Screen.height)
-				{
-					_screenTexture.Resize(Screen.width, Screen.height);
-				}
-				
-				_cam.Render();
+				GetScaledScreenResolution(Plugin.Instance.Config.renderScale, out var scaledWidth, out var scaledHeight);
+				_camRenderTexture.width = scaledWidth;
+				_camRenderTexture.height = scaledHeight;
 
-				if (ShouldRenderPreview)
-				{
-					_screenTexture.ReadPixels(new Rect(0, 0, Screen.width, Screen.width), 0, 0);
-					_screenTexture.Apply(false);
-				}
-
-				nextRender = Time.realtimeSinceStartup + 1 / Plugin.Config.fps;
-			}
+				_camRenderTexture.antiAliasing = Plugin.Instance.Config.antiAliasing;
+				_camRenderTexture.Create();
+			
+				_cam.targetTexture = _camRenderTexture;
+				_previewMaterial.SetTexture("_MainTex", _camRenderTexture);
+				_screenCamera.SetRenderTexture(_camRenderTexture);
+			});
 		}
 
-		private static void SceneManagerOnActiveSceneChanged(Scene arg0, Scene scene)
+		protected virtual void GetScaledScreenResolution(float scale, out int scaledWidth, out int scaledHeight)
+		{
+			var ratio = (float) Screen.height / Screen.width;
+			scaledWidth = Mathf.Clamp(Mathf.RoundToInt(Screen.width * scale), 1, int.MaxValue);
+			scaledHeight = Mathf.Clamp(Mathf.RoundToInt(scaledWidth * ratio), 1, int.MaxValue);
+		}
+
+		protected virtual void SceneManagerOnActiveSceneChanged(Scene arg0, Scene scene)
 		{
 			var pointer = Resources.FindObjectsOfTypeAll<VRPointer>().FirstOrDefault();
 			if (pointer == null) return;
 			var movePointer = (CameraMoverPointer) ReflectionUtil.CopyComponent(pointer, typeof(CameraMoverPointer), pointer.gameObject);
 			DestroyImmediate(pointer);
-			movePointer.Init(_cameraCube);
+			movePointer.Init(this, _cameraCube);
 		}
 
-		private void LateUpdate()
+		protected virtual void LateUpdate()
 		{
-			var camera = MainCamera.transform;
+			var camera = _mainCamera.transform;
 
 			if (ThirdPerson)
 			{
@@ -196,41 +261,41 @@ namespace CameraPlus
 			}
 
 			transform.position = Vector3.Lerp(transform.position, camera.position,
-				Plugin.Config.positionSmooth * Time.deltaTime);
+				Plugin.Instance.Config.positionSmooth * Time.deltaTime);
 			
 			transform.rotation = Quaternion.Slerp(transform.rotation, camera.rotation,
-				Plugin.Config.rotationSmooth * Time.deltaTime);
+				Plugin.Instance.Config.rotationSmooth * Time.deltaTime);
 		}
 
-		private static void SetFOV()
+		protected virtual void SetFOV()
 		{
 			if (_cam == null) return;
 			var fov = (float) (57.2957801818848 *
-			                   (2.0 * Mathf.Atan(Mathf.Tan((float) (Plugin.Config.fov * (Math.PI / 180.0) * 0.5)) /
-			                                     MainCamera.aspect)));
+			                   (2.0 * Mathf.Atan(
+				                    Mathf.Tan((float) (Plugin.Instance.Config.fov * (Math.PI / 180.0) * 0.5)) /
+				                    _mainCamera.aspect)));
 			_cam.fieldOfView = fov;
 		}
 
-		private void Update()
+		protected virtual void Update()
 		{
 			if (Input.GetKeyDown(KeyCode.F1))
 			{
 				ThirdPerson = !ThirdPerson;
 				if (!ThirdPerson)
 				{
-					transform.position = MainCamera.transform.position;
-					transform.rotation = MainCamera.transform.rotation;
+					transform.position = _mainCamera.transform.position;
+					transform.rotation = _mainCamera.transform.rotation;
+				}
+				else
+				{
+					ThirdPersonPos = Plugin.Instance.Config.Position;
+					ThirdPersonRot = Plugin.Instance.Config.Rotation;
 				}
 
-				Plugin.Config.thirdPerson = ThirdPerson;
-				Plugin.Config.Save();
+				Plugin.Instance.Config.thirdPerson = ThirdPerson;
+				Plugin.Instance.Config.Save();
 			}
-		}
-		
-		public static bool IsVisibleToCamera(Transform transform, Camera camera)
-		{
-			var visTest = camera.WorldToViewportPoint(transform.position);
-			return visTest.x >= 0 && visTest.y >= 0 && visTest.x <= 1 && visTest.y <= 1 && visTest.z >= 0;
 		}
 	}
 }
