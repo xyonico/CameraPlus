@@ -21,18 +21,20 @@ Press <kbd>F1</kbd> to toggle between first and third person.
 After you run the game once, a `cameraplus.cfg` file is created within the Beat Saber folder.
 Edit that file to configure CameraPlus:
 
-`fov=90.0` The horizontal field of view of the camera  
-`positionSmooth=10.0` How much position should smooth **(SMALLER NUMBER = SMOOTHER)**  
-`rotationSmooth=5.0` How much rotation should smooth **(SMALLER NUMBER = SMOOTHER)**  
-`thirdPerson=false` Whether third person camera is enabled  
+`fov=90.0` Horizontal field of view of the camera
+`fps=90.0` Frame rate of the camera
+`antiAliasing=2` Anti-aliasing setting for the camera (1, 2, 4 or 8 only)
+`renderScale` The resolution scale of the camera relative to game window (similar to supersampling for VR)
+`positionSmooth=10.0` How much position should smooth **(SMALLER NUMBER = SMOOTHER)**
+`rotationSmooth=5.0` How much rotation should smooth **(SMALLER NUMBER = SMOOTHER)**
+`thirdPerson=false` Whether third person camera is enabled
 
-`posx=0` X position of third person camera  
-`posy=0` Y position of third person camera  
-`posz=0` Z position of third person camera  
-`rotx=0` X rotation of third person camera  
-`roty=0` Y rotation of third person camera  
-`rotz=0` Z rotation of third person camera  
-`rotw=0` W rotation of third person camera  
+`posx=0` X position of third person camera
+`posy=0` Y position of third person camera
+`posz=0` Z position of third person camera
+`angx=0` X rotation of third person camera
+`angy=0` Y rotation of third person camera
+`angz=0` Z rotation of third person camera
 
 If you need help, ask us at the Beat Saber Mod Group Discord Server:
-https://discord.gg/Cz6PTM5
+https://discord.gg/BeatSaberMods
