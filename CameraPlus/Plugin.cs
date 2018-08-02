@@ -17,7 +17,7 @@ namespace CameraPlus
 		
 		public static Plugin Instance { get; private set; }
 		public string Name => "CameraPlus";
-		public string Version => "v2.0";
+		public string Version => "v2.0.0";
 
 		public void OnApplicationStart()
 		{
