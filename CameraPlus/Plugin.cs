@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Collections;
 using System.IO;
-using System.Linq;
 using IllusionPlugin;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -11,13 +11,14 @@ namespace CameraPlus
 	public class Plugin : IPlugin
 	{
 		public readonly Config Config = new Config(Path.Combine(Environment.CurrentDirectory, "cameraplus.cfg"));
+		private readonly WaitForSecondsRealtime _waitForSecondsRealtime = new WaitForSecondsRealtime(0.1f);
 		
 		private CameraPlusBehaviour _cameraPlus;
 		private bool _init;
 		
 		public static Plugin Instance { get; private set; }
 		public string Name => "CameraPlus";
-		public string Version => "v2.0.0";
+		public string Version => "v2.0.1";
 
 		public void OnApplicationStart()
 		{
@@ -26,12 +27,12 @@ namespace CameraPlus
 
 			Instance = this;
 			
-			SceneManager.activeSceneChanged += SceneManagerOnActiveSceneChanged;
+			SceneManager.sceneLoaded += SceneManagerOnSceneLoaded;
 		}
 
 		public void OnApplicationQuit()
 		{
-			SceneManager.activeSceneChanged -= SceneManagerOnActiveSceneChanged;
+			SceneManager.sceneLoaded -= SceneManagerOnSceneLoaded;
 			Config.Save();
 		}
 
@@ -51,13 +52,23 @@ namespace CameraPlus
 		{
 		}
 
-		private void SceneManagerOnActiveSceneChanged(Scene arg0, Scene scene)
+		private void SceneManagerOnSceneLoaded(Scene scene, LoadSceneMode mode)
 		{
-			if (scene.buildIndex < 1) return;
+			SharedCoroutineStarter.instance.StartCoroutine(DelayedOnSceneLoaded(scene));
+		}
+
+		private IEnumerator DelayedOnSceneLoaded(Scene scene)
+		{
+			yield return _waitForSecondsRealtime;
+			
+			if (scene.buildIndex < 1) yield break;
 			if (_cameraPlus != null) Object.Destroy(_cameraPlus.gameObject);
 
-			var mainCamera = Object.FindObjectsOfType<Camera>().FirstOrDefault(x => x.CompareTag("MainCamera"));
-			if (mainCamera == null) return;
+			var mainCamera = Camera.main;
+			if (mainCamera == null)
+			{
+				yield break;
+			}
 
 			var gameObj = new GameObject("CameraPlus");
 			_cameraPlus = gameObj.AddComponent<CameraPlusBehaviour>();

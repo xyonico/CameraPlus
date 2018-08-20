@@ -8,7 +8,6 @@ namespace CameraPlus
 	{
 		public string FilePath { get; }
 		public float fov = 90;
-		public float fps = 60;
 		public int antiAliasing = 2;
 		public float renderScale = 1;
 		public float positionSmooth = 10;

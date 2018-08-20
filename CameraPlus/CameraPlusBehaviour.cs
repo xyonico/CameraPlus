@@ -44,7 +44,6 @@ namespace CameraPlus
 		protected Material _previewMaterial;
 		protected Camera _cam;
 		protected Transform _cameraCube;
-		protected float _lastRenderTime;
 		protected ScreenCameraBehaviour _screenCamera;
 		protected GameObject _cameraPreviewQuad;
 		
@@ -57,12 +56,10 @@ namespace CameraPlus
 		{
 			_mainCamera = mainCamera;
 			
-			Camera.onPreCull += OnCameraPreCull;
-			
 			XRSettings.showDeviceView = false;
 			
 			Plugin.Instance.Config.ConfigChangedEvent += PluginOnConfigChangedEvent;
-			SceneManager.activeSceneChanged += SceneManagerOnActiveSceneChanged;
+			SceneManager.sceneLoaded += SceneManagerOnSceneLoaded;
 			
 			var gameObj = Instantiate(_mainCamera.gameObject);
 			gameObj.SetActive(false);
@@ -88,7 +85,7 @@ namespace CameraPlus
 			
 			_cam = gameObj.GetComponent<Camera>();
 			_cam.stereoTargetEye = StereoTargetEyeMask.None;
-			_cam.enabled = false;
+			_cam.enabled = true;
 
 			gameObj.SetActive(true);
 
@@ -130,33 +127,13 @@ namespace CameraPlus
 				_cameraCube.eulerAngles = ThirdPersonRot;
 			}
 			
-			SceneManagerOnActiveSceneChanged(new Scene(), new Scene());
-		}
-
-		protected virtual void OnCameraPreCull(Camera cam)
-		{
-			if (cam != _mainCamera) return;
-			var currentTime = Time.realtimeSinceStartup;
-			if (_lastRenderTime + (1 / Plugin.Instance.Config.fps) > currentTime) return;
-			
-			if (Screen.width != _prevScreenWidth || Screen.height != _prevScreenHeight)
-			{
-				CreateScreenRenderTexture();
-			}
-				
-			if (_cam.targetTexture != null)
-			{
-				_cam.Render();
-			}
-
-			_lastRenderTime = currentTime;
+			SceneManagerOnSceneLoaded(new Scene(), LoadSceneMode.Single);
 		}
 
 		protected virtual void OnDestroy()
 		{
 			Plugin.Instance.Config.ConfigChangedEvent -= PluginOnConfigChangedEvent;
-			SceneManager.activeSceneChanged -= SceneManagerOnActiveSceneChanged;
-			Camera.onPreCull -= OnCameraPreCull;
+			SceneManager.sceneLoaded -= SceneManagerOnSceneLoaded;
 		}
 
 		protected virtual void PluginOnConfigChangedEvent(Config config)
@@ -238,17 +215,21 @@ namespace CameraPlus
 			scaledHeight = Mathf.Clamp(Mathf.RoundToInt(scaledWidth * ratio), 1, int.MaxValue);
 		}
 
-		protected virtual void SceneManagerOnActiveSceneChanged(Scene arg0, Scene scene)
+		protected virtual void SceneManagerOnSceneLoaded(Scene scene, LoadSceneMode mode)
 		{
 			var pointer = Resources.FindObjectsOfTypeAll<VRPointer>().FirstOrDefault();
 			if (pointer == null) return;
-			var movePointer = (CameraMoverPointer) ReflectionUtil.CopyComponent(pointer, typeof(CameraMoverPointer), pointer.gameObject);
-			DestroyImmediate(pointer);
+			var movePointer = pointer.gameObject.AddComponent<CameraMoverPointer>();
 			movePointer.Init(this, _cameraCube);
 		}
 
 		protected virtual void LateUpdate()
 		{
+			if (Screen.width != _prevScreenWidth || Screen.height != _prevScreenHeight)
+			{
+				CreateScreenRenderTexture();
+			}
+			
 			var camera = _mainCamera.transform;
 
 			if (ThirdPerson)

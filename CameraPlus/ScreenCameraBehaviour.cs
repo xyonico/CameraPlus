@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 namespace CameraPlus
 {
@@ -21,14 +22,14 @@ namespace CameraPlus
 			_cam = gameObject.AddComponent<Camera>();
 			_cam.clearFlags = CameraClearFlags.Nothing;
 			_cam.cullingMask = 0;
-			_cam.depth = 1000;
+			_cam.depth = -1000;
 			_cam.stereoTargetEye = StereoTargetEyeMask.None;
 		}
 		
 		private void OnRenderImage(RenderTexture src, RenderTexture dest)
 		{
 			if (_renderTexture == null) return;
-			Graphics.Blit(_renderTexture, (RenderTexture) null);
+			Graphics.Blit(_renderTexture, dest);
 		}
 	}
 }

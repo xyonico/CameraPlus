@@ -3,8 +3,12 @@ using VRUIControls;
 
 namespace CameraPlus
 {
-	public class CameraMoverPointer : VRPointer
+	public class CameraMoverPointer : MonoBehaviour
 	{
+		protected const float MinScrollDistance = 0.25f;
+		protected const float MaxLaserDistance = 50;
+
+		protected VRPointer _vrPointer;
 		protected CameraPlusBehaviour _cameraPlus;
 		protected Transform _cameraCube;
 		protected VRController _grabbingController;
@@ -12,25 +16,23 @@ namespace CameraPlus
 		protected Quaternion _grabRot;
 		protected Vector3 _realPos;
 		protected Quaternion _realRot;
-		protected const float MinDistance = 0.25f;
 
-		public virtual void Init(CameraPlusBehaviour cameraPlus,Transform cameraCube)
+		public virtual void Init(CameraPlusBehaviour cameraPlus, Transform cameraCube)
 		{
 			_cameraPlus = cameraPlus;
 			_cameraCube = cameraCube;
 			_realPos = Plugin.Instance.Config.Position;
 			_realRot = Quaternion.Euler(Plugin.Instance.Config.Rotation);
+			_vrPointer = GetComponent<VRPointer>();
 		}
 
-		public override void OnEnable()
+		protected virtual void OnEnable()
 		{
-			base.OnEnable();
 			Plugin.Instance.Config.ConfigChangedEvent += PluginOnConfigChangedEvent;
 		}
 
-		public override void OnDisable()
+		protected virtual void OnDisable()
 		{
-			base.OnDisable();
 			Plugin.Instance.Config.ConfigChangedEvent -= PluginOnConfigChangedEvent;
 		}
 
@@ -40,19 +42,18 @@ namespace CameraPlus
 			_realRot = Quaternion.Euler(config.Rotation);
 		}
 
-		public override void Update()
+		protected virtual void Update()
 		{
-			base.Update();
-			if (vrController != null)
-				if (vrController.triggerValue > 0.9f)
+			if (_vrPointer.vrController != null)
+				if (_vrPointer.vrController.triggerValue > 0.9f)
 				{
 					if (_grabbingController != null) return;
-					if (Physics.Raycast(vrController.position, vrController.forward, out var hit, _defaultLaserPointerLength))
+					if (Physics.Raycast(_vrPointer.vrController.position, _vrPointer.vrController.forward, out var hit, MaxLaserDistance))
 					{
 						if (hit.transform != _cameraCube) return;
-						_grabbingController = vrController;
-						_grabPos = vrController.transform.InverseTransformPoint(_cameraCube.position);
-						_grabRot = Quaternion.Inverse(vrController.transform.rotation) * _cameraCube.rotation;
+						_grabbingController = _vrPointer.vrController;
+						_grabPos = _vrPointer.vrController.transform.InverseTransformPoint(_cameraCube.position);
+						_grabRot = Quaternion.Inverse(_vrPointer.vrController.transform.rotation) * _cameraCube.rotation;
 					}
 				}
 
@@ -67,7 +68,7 @@ namespace CameraPlus
 			if (_grabbingController != null)
 			{
 				var diff = _grabbingController.verticalAxisValue * Time.deltaTime;
-				if (_grabPos.magnitude > MinDistance)
+				if (_grabPos.magnitude > MinScrollDistance)
 				{
 					_grabPos -= Vector3.forward * diff;
 				}
